@@ -17,15 +17,15 @@ A Windows desktop application providing quick access to system power controls, s
 - Windows 10/11
 
 ### Build
-\`\`\`bash
+```bash
 dotnet build
 dotnet publish -c Release -r win-x64
-\`\`\`
+```
 
 ### Run
-\`\`\`bash
+```bash
 dotnet run
-\`\`\`
+```
 
 ## Project Structure
 
@@ -38,7 +38,11 @@ dotnet run
 
 ## License
 
-[Specify your license here]
+This project is licensed under the **GNU General Public License v3.0 (GPLv3)**. See the LICENSE file for full details.
+
+In summary: You are free to use, modify, and distribute this software, provided that any derivative works are also licensed under GPLv3.
+
+For the full license text, visit: https://www.gnu.org/licenses/gpl-3.0.txt
 
 ## Author
 
