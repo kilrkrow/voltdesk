@@ -1,0 +1,118 @@
+name: Publish to Chocolatey
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish-chocolatey:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x' # Adjust to your target framework
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build release
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Publish application
+        run: dotnet publish --configuration Release --output ./publish
+
+      - name: Download Inno Setup Compiler
+        run: |
+          choco install innosetup -y
+
+      - name: Build Inno Setup installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "voltdesk.iss"
+        # Adjust the path to your .iss file and Inno Setup version
+
+      - name: Create Chocolatey package structure
+        run: |
+          mkdir -p choco-pkg\tools
+          Copy-Item -Path "*.exe" -Destination "choco-pkg\tools\" -Filter "*VoltDesk*.exe"
+          Copy-Item -Path "LICENSE" -Destination "choco-pkg\" -ErrorAction SilentlyContinue
+
+      - name: Create nuspec file
+        run: |
+          @'
+          <?xml version="1.0" encoding="utf-8"?>
+          <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+            <metadata>
+              <id>voltdesk</id>
+              <version>${{ github.ref_name }}</version>
+              <title>VoltDesk</title>
+              <authors>kilrkrow</authors>
+              <description>Windows desktop application for quick system access and power management</description>
+              <projectUrl>https://github.com/kilrkrow/voltdesk</projectUrl>
+              <licenseUrl>https://github.com/kilrkrow/voltdesk/blob/main/LICENSE</licenseUrl>
+              <requireLicenseAcceptance>false</requireLicenseAcceptance>
+              <tags>system-access power-management windows-desktop</tags>
+              <summary>Quick system access and power management for Windows</summary>
+              <releaseNotes>https://github.com/kilrkrow/voltdesk/releases/tag/${{ github.ref_name }}</releaseNotes>
+            </metadata>
+            <files>
+              <file src="tools\**" target="tools" />
+            </files>
+          </package>
+          '@ | Out-File -Encoding UTF8 "choco-pkg\voltdesk.nuspec"
+
+      - name: Create chocolateyInstall.ps1
+        run: |
+          @'
+          $packageName = 'voltdesk'
+          $toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
+          $installerPath = Get-ChildItem $toolsDir -Filter "*VoltDesk*.exe" | Select-Object -First 1 -ExpandProperty FullName
+
+          if (-not $installerPath) {
+            throw "VoltDesk installer not found in tools directory"
+          }
+
+          $silentArgs = '/S'
+          $installDir = Join-Path $env:ProgramFiles 'VoltDesk'
+
+          Start-Process -FilePath $installerPath -ArgumentList $silentArgs -Wait -NoNewWindow
+          '@ | Out-File -Encoding UTF8 "choco-pkg\tools\chocolateyInstall.ps1"
+
+      - name: Create chocolateyUninstall.ps1
+        run: |
+          @'
+          $packageName = 'voltdesk'
+          $installDir = Join-Path $env:ProgramFiles 'VoltDesk'
+
+          if (Test-Path $installDir) {
+            $uninstallerPath = Get-ChildItem $installDir -Filter "*uninstall*.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
+            
+            if ($uninstallerPath) {
+              Start-Process -FilePath $uninstallerPath -ArgumentList '/S' -Wait -NoNewWindow
+            }
+          }
+          '@ | Out-File -Encoding UTF8 "choco-pkg\tools\chocolateyUninstall.ps1"
+
+      - name: Install Chocolatey CLI
+        run: |
+          choco install chocolatey-cli -y
+
+      - name: Pack Chocolatey package
+        run: |
+          cd choco-pkg
+          choco pack voltdesk.nuspec
+
+      - name: Test package locally
+        run: |
+          cd choco-pkg
+          choco install voltdesk -s . -y
+
+      - name: Publish to Chocolatey
+        run: |
+          cd choco-pkg
+          choco push voltdesk.${{ github.ref_name }}.nupkg --source https://push.chocolatey.org/ --key=${{ secrets.CHOCOLATEY_API_KEY }}
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
