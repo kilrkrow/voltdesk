@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -9,6 +10,7 @@ namespace PowerDesktopApp
         private NotifyIcon _trayIcon;
         private AppConfiguration _config;
         private HotkeyManager _hotkeyManager;
+        private ToolStripMenuItem _profilesMenuHeader;
 
         public TrayApplicationContext()
         {
@@ -23,16 +25,53 @@ namespace PowerDesktopApp
                 Text = "VoltDesk"
             };
 
+            _profilesMenuHeader = new ToolStripMenuItem("Power Profiles");
+
             var settingsItem = new ToolStripMenuItem("Settings", null, ShowSettings);
             var exitItem = new ToolStripMenuItem("Exit", null, Exit);
-            
+
+            _trayIcon.ContextMenuStrip.Items.Add(_profilesMenuHeader);
+            _trayIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
             _trayIcon.ContextMenuStrip.Items.Add(settingsItem);
             _trayIcon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
             _trayIcon.ContextMenuStrip.Items.Add(exitItem);
 
+            _trayIcon.ContextMenuStrip.Opening += ContextMenu_Opening;
             _trayIcon.DoubleClick += ShowSettings;
 
             RegisterHotkeys();
+        }
+
+        private void ContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            BuildProfileMenuItems();
+        }
+
+        private void BuildProfileMenuItems()
+        {
+            _profilesMenuHeader.DropDownItems.Clear();
+
+            var profiles = PowerManager.GetProfiles();
+
+            foreach (var profile in profiles)
+            {
+                string guid = profile.Guid;
+                string name = profile.Name;
+
+                var item = new ToolStripMenuItem(name)
+                {
+                    Checked = profile.IsActive,
+                    CheckOnClick = false
+                };
+
+                item.Click += (s, args) =>
+                {
+                    PowerManager.SetActiveProfile(guid);
+                    ShowNotification("Power Profile Applied", $"Switched to {name}");
+                };
+
+                _profilesMenuHeader.DropDownItems.Add(item);
+            }
         }
 
         private void RegisterHotkeys()
