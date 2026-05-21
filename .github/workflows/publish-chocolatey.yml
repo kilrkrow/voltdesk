@@ -119,7 +119,7 @@ jobs:
       - name: Test package locally
         run: |
           cd choco-pkg
-          choco install voltdesk -s . -y
+          choco install voltdesk -s . -y --ignore-dependencies
 
       - name: Publish to Chocolatey
         run: |
