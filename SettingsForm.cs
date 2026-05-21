@@ -14,6 +14,7 @@ namespace PowerDesktopApp
         private ListBox _lstProfiles;
         private TextBox _txtDesktopHotkey;
         private TextBox _txtProfileHotkey;
+        private CheckBox _chkStartOnWindows;
         private Button _btnSave;
         
         public SettingsForm(AppConfiguration config)
@@ -47,7 +48,13 @@ namespace PowerDesktopApp
             // Make the shortcut textbox clearable using Backspace
             var lblHint = new Label { Text = "Press desired keys. Use Backspace to clear.", Location = new Point(150, 245), AutoSize = true, ForeColor = Color.Gray };
 
-            _btnSave = new Button { Text = "Save", Location = new Point(290, 275), Width = 80 };
+            _chkStartOnWindows = new CheckBox {
+                Text = "Auto-start",
+                Location = new Point(250, 255),
+                Width = 100,
+                Checked = _config.StartOnWindows
+            };
+            _btnSave = new Button { Text = "Save", Location = new Point(290, 285), Width = 80 };
             _btnSave.Click += BtnSave_Click;
 
             this.Controls.Add(lblDesktop);
@@ -58,6 +65,7 @@ namespace PowerDesktopApp
             this.Controls.Add(_txtProfileHotkey);
             this.Controls.Add(lblHint);
             this.Controls.Add(_btnSave);
+            this.Controls.Add(_chkStartOnWindows);
         }
 
         private void HotkeyTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -123,6 +131,7 @@ namespace PowerDesktopApp
         private void LoadData()
         {
             _txtDesktopHotkey.Text = _config.DesktopToggleHotkey;
+            _chkStartOnWindows.Checked = _config.StartOnWindows;
             RefreshProfileList();
         }
 
@@ -154,6 +163,8 @@ namespace PowerDesktopApp
         private void BtnSave_Click(object sender, EventArgs e)
         {
             _config.DesktopToggleHotkey = _txtDesktopHotkey.Text;
+            _config.StartOnWindows = _chkStartOnWindows.Checked;
+            StartupHelper.ApplyStartOnWindows(_chkStartOnWindows.Checked);
             Configuration.Save(_config);
             this.DialogResult = DialogResult.OK;
             this.Close();

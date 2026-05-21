@@ -16,6 +16,7 @@ namespace PowerDesktopApp
     {
         public List<PowerProfileHotkey> Profiles { get; set; } = new List<PowerProfileHotkey>();
         public string DesktopToggleHotkey { get; set; } = "Ctrl+Shift+D";
+        public bool StartOnWindows { get; set; } = true;
     }
 
     public static class Configuration

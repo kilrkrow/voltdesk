@@ -15,6 +15,7 @@ namespace PowerDesktopApp
         public TrayApplicationContext()
         {
             _config = Configuration.Load();
+            StartupHelper.ApplyStartOnWindows(_config.StartOnWindows);
             _hotkeyManager = new HotkeyManager();
 
             _trayIcon = new NotifyIcon()
