@@ -43,7 +43,27 @@ jobs:
         run: |
           mkdir -p choco-pkg\tools
           Copy-Item -Path "Output\VoltDeskSetup.exe" -Destination "choco-pkg\tools\"
-          Copy-Item -Path "LICENSE" -Destination "choco-pkg\" -ErrorAction SilentlyContinue
+          Copy-Item -Path "LICENSE" -Destination "choco-pkg\tools\LICENSE.txt"
+
+          $installerHash = (Get-FileHash "choco-pkg\tools\VoltDeskSetup.exe" -Algorithm SHA256).Hash.ToLowerInvariant()
+          @"
+          VERIFICATION
+          Verification is intended to assist the Chocolatey moderators and community
+          in verifying that this package's embedded binaries are trustworthy.
+
+          The embedded installer is built from source by the GitHub Actions workflow
+          for the release tag and then packaged without downloading third-party
+          application binaries.
+
+          Package: voltdesk
+          Version: ${{ steps.package-version.outputs.version }}
+          Embedded file: tools\VoltDeskSetup.exe
+          SHA256: $installerHash
+
+          Source: https://github.com/kilrkrow/voltdesk/tree/${{ github.ref_name }}
+          Release: https://github.com/kilrkrow/voltdesk/releases/tag/${{ github.ref_name }}
+          Workflow: https://github.com/kilrkrow/voltdesk/actions/workflows/publish-chocolatey.yml
+          "@ | Out-File -Encoding UTF8 "choco-pkg\tools\VERIFICATION.txt"
 
       - name: Create nuspec file
         run: |
@@ -57,7 +77,12 @@ jobs:
               <authors>kilrkrow</authors>
               <description>Windows desktop application for quick system access and power management</description>
               <projectUrl>https://github.com/kilrkrow/voltdesk</projectUrl>
-              <licenseUrl>https://github.com/kilrkrow/voltdesk/blob/main/LICENSE</licenseUrl>
+              <packageSourceUrl>https://github.com/kilrkrow/voltdesk</packageSourceUrl>
+              <projectSourceUrl>https://github.com/kilrkrow/voltdesk</projectSourceUrl>
+              <bugTrackerUrl>https://github.com/kilrkrow/voltdesk/issues</bugTrackerUrl>
+              <docsUrl>https://github.com/kilrkrow/voltdesk#readme</docsUrl>
+              <iconUrl>https://cdn.jsdelivr.net/gh/kilrkrow/voltdesk@master/appicon.ico</iconUrl>
+              <licenseUrl>https://github.com/kilrkrow/voltdesk/blob/master/LICENSE</licenseUrl>
               <requireLicenseAcceptance>false</requireLicenseAcceptance>
               <tags>system-access power-management windows-desktop</tags>
               <summary>Quick system access and power management for Windows</summary>
