@@ -27,8 +27,8 @@ jobs:
 
       - name: Download Inno Setup Compiler
         run: |
-          choco install innosetup -y
-
+          choco install inno-setup -y
+          
       - name: Build Inno Setup installer
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "VoltDeskInstaller.iss"
