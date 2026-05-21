@@ -17,13 +17,13 @@ jobs:
           dotnet-version: '8.0.x' # Adjust to your target framework
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore voltdesk.sln
 
       - name: Build release
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build voltdesk.sln --configuration Release --no-restore
 
       - name: Publish application
-        run: dotnet publish --configuration Release --output ./publish
+        run: dotnet publish PowerDesktopApp/PowerDesktopApp.csproj -c Release -o publish --no-build
 
       - name: Download Inno Setup Compiler
         run: |
