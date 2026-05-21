@@ -23,7 +23,7 @@ jobs:
         run: dotnet build voltdesk.sln --configuration Release --no-restore
 
       - name: Publish application
-        run: dotnet publish PowerDesktopApp/PowerDesktopApp.csproj -c Release -o publish --no-build
+        run: dotnet publish PowerDesktopApp.csproj -c Release -o publish --no-build
 
       - name: Download Inno Setup Compiler
         run: |
