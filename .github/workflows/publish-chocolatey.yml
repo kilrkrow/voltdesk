@@ -14,7 +14,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x' # Adjust to your target framework
+          dotnet-version: '10.0.x'
+
+      - name: Set package version
+        id: package-version
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          "version=$version" >> $env:GITHUB_OUTPUT
 
       - name: Restore dependencies
         run: dotnet restore voltdesk.sln
@@ -27,11 +33,11 @@ jobs:
 
       - name: Download Inno Setup Compiler
         run: |
-          choco install inno-setup -y
+          choco install innosetup -y
           
       - name: Build Inno Setup installer
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "VoltDeskInstaller.iss"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DAppVersion=${{ steps.package-version.outputs.version }}" "VoltDeskInstaller.iss"
 
       - name: Create Chocolatey package structure
         run: |
@@ -46,7 +52,7 @@ jobs:
           <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
             <metadata>
               <id>voltdesk</id>
-              <version>${{ github.ref_name }}</version>
+              <version>${{ steps.package-version.outputs.version }}</version>
               <title>VoltDesk</title>
               <authors>kilrkrow</authors>
               <description>Windows desktop application for quick system access and power management</description>
@@ -56,6 +62,9 @@ jobs:
               <tags>system-access power-management windows-desktop</tags>
               <summary>Quick system access and power management for Windows</summary>
               <releaseNotes>https://github.com/kilrkrow/voltdesk/releases/tag/${{ github.ref_name }}</releaseNotes>
+              <dependencies>
+                <dependency id="dotnet-10.0-desktopruntime" version="[10.0.0,11.0.0)" />
+              </dependencies>
             </metadata>
             <files>
               <file src="tools\**" target="tools" />
@@ -74,10 +83,13 @@ jobs:
             throw "VoltDesk installer not found in tools directory"
           }
 
-          $silentArgs = '/S'
-          $installDir = Join-Path $env:ProgramFiles 'VoltDesk'
+          $silentArgs = '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
 
-          Start-Process -FilePath $installerPath -ArgumentList $silentArgs -Wait -NoNewWindow
+          $process = Start-Process -FilePath $installerPath -ArgumentList $silentArgs -Wait -NoNewWindow -PassThru
+          $validExitCodes = @(0, 3010)
+          if ($validExitCodes -notcontains $process.ExitCode) {
+            throw "VoltDesk installer failed with exit code $($process.ExitCode)"
+          }
           '@ | Out-File -Encoding UTF8 "choco-pkg\tools\chocolateyInstall.ps1"
 
       - name: Create chocolateyUninstall.ps1
@@ -90,14 +102,14 @@ jobs:
             $uninstallerPath = Get-ChildItem $installDir -Filter "*uninstall*.exe" -Recurse | Select-Object -First 1 -ExpandProperty FullName
             
             if ($uninstallerPath) {
-              Start-Process -FilePath $uninstallerPath -ArgumentList '/S' -Wait -NoNewWindow
+              $process = Start-Process -FilePath $uninstallerPath -ArgumentList '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART' -Wait -NoNewWindow -PassThru
+              $validExitCodes = @(0, 3010)
+              if ($validExitCodes -notcontains $process.ExitCode) {
+                throw "VoltDesk uninstaller failed with exit code $($process.ExitCode)"
+              }
             }
           }
           '@ | Out-File -Encoding UTF8 "choco-pkg\tools\chocolateyUninstall.ps1"
-
-      - name: Install Chocolatey CLI
-        run: |
-          choco install chocolatey-cli -y
 
       - name: Pack Chocolatey package
         run: |
@@ -112,6 +124,6 @@ jobs:
       - name: Publish to Chocolatey
         run: |
           cd choco-pkg
-          choco push voltdesk.${{ github.ref_name }}.nupkg --source https://push.chocolatey.org/ --key=${{ secrets.CHOCOLATEY_API_KEY }}
+          choco push voltdesk.${{ steps.package-version.outputs.version }}.nupkg --source https://push.chocolatey.org/ --key=${{ secrets.CHOCOLATEY_API_KEY }}
         env:
           CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}

@@ -1,9 +1,13 @@
 [Setup]
+#ifndef AppVersion
+#define AppVersion "1.0.0"
+#endif
 AppName=VoltDesk
-AppVersion=1.0
+AppVersion={#AppVersion}
 DefaultDirName={autopf}\VoltDesk
 DefaultGroupName=VoltDesk
 UninstallDisplayIcon={app}\VoltDesk.exe
+ArchitecturesInstallIn64BitMode=x64compatible
 Compression=lzma2
 SolidCompression=yes
 OutputDir=Output
