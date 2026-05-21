@@ -31,13 +31,12 @@ jobs:
 
       - name: Build Inno Setup installer
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "voltdesk.iss"
-        # Adjust the path to your .iss file and Inno Setup version
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "VoltDeskInstaller.iss"
 
       - name: Create Chocolatey package structure
         run: |
           mkdir -p choco-pkg\tools
-          Copy-Item -Path "*.exe" -Destination "choco-pkg\tools\" -Filter "*VoltDesk*.exe"
+          Copy-Item -Path "Output\VoltDeskSetup.exe" -Destination "choco-pkg\tools\"
           Copy-Item -Path "LICENSE" -Destination "choco-pkg\" -ErrorAction SilentlyContinue
 
       - name: Create nuspec file
