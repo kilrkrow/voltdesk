@@ -15,6 +15,7 @@ namespace PowerDesktopApp
         private TextBox _txtDesktopHotkey;
         private TextBox _txtProfileHotkey;
         private CheckBox _chkStartOnWindows;
+        private CheckBox _chkStartMenu;
         private Button _btnSave;
         
         public SettingsForm(AppConfiguration config)
@@ -54,6 +55,12 @@ namespace PowerDesktopApp
                 Width = 100,
                 Checked = _config.StartOnWindows
             };
+            _chkStartMenu = new CheckBox {
+                Text = "Start Menu shortcut",
+                Location = new Point(10, 255),
+                Width = 150,
+                Checked = _config.AddToStartMenu
+            };
             _btnSave = new Button { Text = "Save", Location = new Point(290, 285), Width = 80 };
             _btnSave.Click += BtnSave_Click;
 
@@ -66,6 +73,7 @@ namespace PowerDesktopApp
             this.Controls.Add(lblHint);
             this.Controls.Add(_btnSave);
             this.Controls.Add(_chkStartOnWindows);
+            this.Controls.Add(_chkStartMenu);
         }
 
         private void HotkeyTextBox_KeyDown(object sender, KeyEventArgs e)
@@ -132,6 +140,7 @@ namespace PowerDesktopApp
         {
             _txtDesktopHotkey.Text = _config.DesktopToggleHotkey;
             _chkStartOnWindows.Checked = _config.StartOnWindows;
+            _chkStartMenu.Checked = _config.AddToStartMenu;
             RefreshProfileList();
         }
 
@@ -164,7 +173,9 @@ namespace PowerDesktopApp
         {
             _config.DesktopToggleHotkey = _txtDesktopHotkey.Text;
             _config.StartOnWindows = _chkStartOnWindows.Checked;
+            _config.AddToStartMenu = _chkStartMenu.Checked;
             StartupHelper.ApplyStartOnWindows(_chkStartOnWindows.Checked);
+            StartupHelper.ApplyStartMenuShortcut(_chkStartMenu.Checked);
             Configuration.Save(_config);
             this.DialogResult = DialogResult.OK;
             this.Close();

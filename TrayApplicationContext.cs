@@ -16,6 +16,7 @@ namespace PowerDesktopApp
         {
             _config = Configuration.Load();
             StartupHelper.ApplyStartOnWindows(_config.StartOnWindows);
+            StartupHelper.ApplyStartMenuShortcut(_config.AddToStartMenu);
             _hotkeyManager = new HotkeyManager();
 
             _trayIcon = new NotifyIcon()

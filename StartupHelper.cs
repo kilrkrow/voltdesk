@@ -55,5 +55,53 @@ namespace PowerDesktopApp
                 Console.WriteLine($"Error removing startup shortcut: {ex.Message}");
             }
         }
+
+        public static void ApplyStartMenuShortcut(bool enable)
+        {
+            string shortcutPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Programs), 
+                "VoltDesk.lnk"
+            );
+
+            try
+            {
+                if (enable)
+                {
+                    string appPath = Environment.ProcessPath ?? Application.ExecutablePath;
+                    if (!string.IsNullOrEmpty(appPath))
+                    {
+                        Type? shellType = Type.GetTypeFromProgID("WScript.Shell");
+                        if (shellType != null)
+                        {
+                            object shell = Activator.CreateInstance(shellType)!;
+                            object shortcut = shellType.InvokeMember("CreateShortcut", 
+                                System.Reflection.BindingFlags.InvokeMethod, 
+                                null, shell, new object[] { shortcutPath })!;
+                            
+                            Type shortcutType = shortcut.GetType();
+                            shortcutType.InvokeMember("TargetPath", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { appPath });
+                            shortcutType.InvokeMember("Description", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { "VoltDesk Quick Access App" });
+                            shortcutType.InvokeMember("WorkingDirectory", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { Path.GetDirectoryName(appPath)! });
+                            shortcutType.InvokeMember("IconLocation", System.Reflection.BindingFlags.SetProperty, null, shortcut, new object[] { appPath });
+                            shortcutType.InvokeMember("Save", System.Reflection.BindingFlags.InvokeMethod, null, shortcut, null);
+
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(shortcut);
+                            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(shell);
+                        }
+                    }
+                }
+                else
+                {
+                    if (File.Exists(shortcutPath))
+                    {
+                        File.Delete(shortcutPath);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error managing Start Menu shortcut: {ex.Message}");
+            }
+        }
     }
 }
