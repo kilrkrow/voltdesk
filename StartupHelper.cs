@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Windows.Forms;
 using Microsoft.Win32;
@@ -102,6 +102,28 @@ namespace PowerDesktopApp
             {
                 Console.WriteLine($"Error managing Start Menu shortcut: {ex.Message}");
             }
+        }
+        public static bool IsStartOnWindows()
+        {
+            try
+            {
+                using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(RunKey, false))
+                {
+                    return key?.GetValue(AppName) != null;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool IsStartMenuShortcut()
+        {
+            string shortcutPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Programs),
+                "VoltDesk.lnk");
+            return File.Exists(shortcutPath);
         }
     }
 }

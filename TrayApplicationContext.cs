@@ -1,16 +1,18 @@
 using System;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace PowerDesktopApp
 {
-    public class TrayApplicationContext : ApplicationContext
+    public class TrayApplicationContext
     {
         private NotifyIcon _trayIcon;
         private AppConfiguration _config;
         private HotkeyManager _hotkeyManager;
         private ToolStripMenuItem _profilesMenuHeader;
+        private SettingsWindow? _settingsWindow;
 
         public TrayApplicationContext()
         {
@@ -21,7 +23,7 @@ namespace PowerDesktopApp
 
             _trayIcon = new NotifyIcon()
             {
-                Icon = new Icon("appicon.ico"),
+                Icon = LoadAppIcon(),
                 ContextMenuStrip = new ContextMenuStrip(),
                 Visible = true,
                 Text = "VoltDesk"
@@ -42,6 +44,23 @@ namespace PowerDesktopApp
             _trayIcon.DoubleClick += ShowSettings;
 
             RegisterHotkeys();
+        }
+
+        private static Icon LoadAppIcon()
+        {
+            string ico = Path.Combine(AppContext.BaseDirectory, "appicon.ico");
+            if (File.Exists(ico))
+                return new Icon(ico);
+
+            string? exe = Environment.ProcessPath;
+            if (!string.IsNullOrEmpty(exe))
+            {
+                Icon? extracted = Icon.ExtractAssociatedIcon(exe);
+                if (extracted != null)
+                    return extracted;
+            }
+
+            throw new FileNotFoundException("VoltDesk appicon.ico is missing.");
         }
 
         private void ContextMenu_Opening(object sender, CancelEventArgs e)
@@ -89,10 +108,9 @@ namespace PowerDesktopApp
             {
                 if (!string.IsNullOrEmpty(profile.Hotkey))
                 {
-                    // Important: Copy closure variable for lambda
                     string guid = profile.Guid;
                     string name = profile.Name;
-                    _hotkeyManager.RegisterHotkey(profile.Hotkey, () => 
+                    _hotkeyManager.RegisterHotkey(profile.Hotkey, () =>
                     {
                         PowerManager.SetActiveProfile(guid);
                         ShowNotification("Power Profile Applied", $"Switched to {name}");
@@ -106,24 +124,42 @@ namespace PowerDesktopApp
             _trayIcon.ShowBalloonTip(3000, title, text, ToolTipIcon.Info);
         }
 
+        public void OpenSettings() => ShowSettings(this, EventArgs.Empty);
+
+        public void ExitFromTray() => Exit(this, EventArgs.Empty);
+
         private void ShowSettings(object sender, EventArgs e)
         {
-            using (var form = new SettingsForm(_config))
+            if (_settingsWindow is not null)
             {
-                if (form.ShowDialog() == DialogResult.OK)
-                {
-                    // Config was saved inside SettingsForm, so just reload hotkeys
-                    _config = Configuration.Load();
-                    RegisterHotkeys();
-                }
+                _settingsWindow.Activate();
+                return;
             }
+
+            _settingsWindow = new SettingsWindow(_config, RegisterHotkeys);
+            _settingsWindow.Closed += SettingsWindow_Closed;
+            _settingsWindow.Activate();
+        }
+
+        private void SettingsWindow_Closed(object sender, Microsoft.UI.Xaml.WindowEventArgs args)
+        {
+            if (_settingsWindow is not null)
+            {
+                _settingsWindow.Closed -= SettingsWindow_Closed;
+                _settingsWindow = null;
+            }
+            _config = Configuration.Load();
+            RegisterHotkeys();
         }
 
         private void Exit(object sender, EventArgs e)
         {
             _trayIcon.Visible = false;
             _hotkeyManager.Dispose();
-            Application.Exit();
+            if (Microsoft.UI.Xaml.Application.Current is App app)
+                app.ShutdownFromTray();
+            else
+                Microsoft.UI.Xaml.Application.Current?.Exit();
         }
     }
 }

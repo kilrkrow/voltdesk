@@ -1,11 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace PowerDesktopApp
 {
-    public class HotkeyManager : IMessageFilter, IDisposable
+    public class HotkeyManager : IDisposable
     {
         [DllImport("user32.dll")]
         private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
@@ -17,18 +17,19 @@ namespace PowerDesktopApp
         private int currentId = 1;
 
         private readonly Dictionary<int, Action> hotkeyActions = new Dictionary<int, Action>();
+        private readonly HotkeyWindow _window;
 
         public HotkeyManager()
         {
-            Application.AddMessageFilter(this);
+            _window = new HotkeyWindow();
+            _window.CreateHandle(new CreateParams { Caption = "VoltDeskHotkeys" });
+            _window.HotkeyPressed = OnHotkey;
         }
 
-        // Modifiers: 1 = Alt, 2 = Control, 4 = Shift, 8 = Win
         public bool RegisterHotkey(uint modifiers, Keys key, Action action)
         {
             int id = currentId++;
-            // Register for the current thread message queue
-            if (RegisterHotKey(IntPtr.Zero, id, modifiers, (uint)key))
+            if (RegisterHotKey(_window.Handle, id, modifiers, (uint)key))
             {
                 hotkeyActions[id] = action;
                 return true;
@@ -49,29 +50,21 @@ namespace PowerDesktopApp
         {
             foreach (var id in hotkeyActions.Keys)
             {
-                UnregisterHotKey(IntPtr.Zero, id);
+                UnregisterHotKey(_window.Handle, id);
             }
             hotkeyActions.Clear();
-        }
-
-        public bool PreFilterMessage(ref Message m)
-        {
-            if (m.Msg == WM_HOTKEY)
-            {
-                int id = m.WParam.ToInt32();
-                if (hotkeyActions.TryGetValue(id, out var action))
-                {
-                    action();
-                    return true; // Match handled
-                }
-            }
-            return false;
         }
 
         public void Dispose()
         {
             UnregisterAll();
-            Application.RemoveMessageFilter(this);
+            _window.DestroyHandle();
+        }
+
+        private void OnHotkey(int id)
+        {
+            if (hotkeyActions.TryGetValue(id, out var action))
+                action();
         }
 
         public static bool ParseHotkeyString(string hotkeyString, out uint modifiers, out Keys key)
@@ -92,16 +85,13 @@ namespace PowerDesktopApp
                 else if (p == "WIN" || p == "WINDOWS") modifiers |= 8;
                 else
                 {
-                    // Workarounds for single keys (e.g. D1 for 1)
                     if (p.Length == 1 && char.IsDigit(p[0]))
                     {
                         if (Enum.TryParse("D" + p, true, out Keys dKey))
                             key = dKey;
                     }
-                    // Attempt to parse the enum key
                     else if (Enum.TryParse(p, true, out Keys k))
                     {
-                        // Prevent purely numeric strings from parsing as underlying integer enum values
                         if (!int.TryParse(p, out _))
                         {
                             key = k;
@@ -111,6 +101,18 @@ namespace PowerDesktopApp
             }
 
             return key != Keys.None;
+        }
+
+        private sealed class HotkeyWindow : NativeWindow
+        {
+            public Action<int>? HotkeyPressed;
+
+            protected override void WndProc(ref Message m)
+            {
+                if (m.Msg == WM_HOTKEY)
+                    HotkeyPressed?.Invoke(m.WParam.ToInt32());
+                base.WndProc(ref m);
+            }
         }
     }
 }
