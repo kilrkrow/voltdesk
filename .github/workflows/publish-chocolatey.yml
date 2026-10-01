@@ -152,3 +152,45 @@ jobs:
           choco push voltdesk.${{ steps.package-version.outputs.version }}.nupkg --source https://push.chocolatey.org/ --key=${{ secrets.CHOCOLATEY_API_KEY }}
         env:
           CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+
+  # Deliberately independent of publish-chocolatey (no `needs:`): a Chocolatey
+  # push or moderation failure must never again leave a release with no assets.
+  release-assets:
+    name: Upload release assets
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore voltdesk.sln
+
+      - name: Build release
+        run: dotnet build voltdesk.sln --configuration Release --no-restore
+
+      - name: Publish application
+        run: dotnet publish PowerDesktopApp.csproj -c Release -o publish --no-build
+
+      - name: Verify publish output is a runnable app
+        run: |
+          foreach ($required in @('VoltDesk.exe', 'VoltDesk.dll', 'VoltDesk.runtimeconfig.json')) {
+            if (-not (Test-Path "publish\$required")) { throw "publish\$required is missing" }
+          }
+          $count = (Get-ChildItem publish -Recurse -File).Count
+          Write-Host "publish output contains $count files"
+          if ($count -lt 100) { throw "publish output has only $count files; expected the full self-contained set" }
+
+      - name: Create release archive
+        run: Compress-Archive -Path "publish\*" -DestinationPath "VoltDesk-win-x64-${{ github.ref_name }}.zip" -Force
+
+      - name: Upload release archive
+        run: gh release upload "${{ github.ref_name }}" "VoltDesk-win-x64-${{ github.ref_name }}.zip" --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
