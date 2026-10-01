@@ -4,6 +4,11 @@
 #endif
 AppName=VoltDesk
 AppVersion={#AppVersion}
+; Per-user install, no elevation. Keeps {autopf} -> {localappdata}\Programs,
+; puts {group}/{autodesktop} in the installing user's own profile, and makes
+; {userstartup} below resolve to that user rather than whichever admin
+; happened to satisfy UAC (which silently broke "start with Windows").
+PrivilegesRequired=lowest
 DefaultDirName={autopf}\VoltDesk
 DefaultGroupName=VoltDesk
 UninstallDisplayIcon={app}\VoltDesk.exe
@@ -18,7 +23,10 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "startup"; Description: "Run VoltDesk automatically when Windows starts"; GroupDescription: "Startup Options";
 
 [Files]
-Source: "publish\VoltDesk.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Ship the entire publish output. VoltDesk.exe is only a ~356 KB apphost stub:
+; the real code lives in VoltDesk.dll, and the self-contained Windows App SDK
+; needs its ~240 sibling files (plus VoltDesk.runtimeconfig.json) to start.
+Source: "publish\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "appicon.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
