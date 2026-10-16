@@ -1,49 +1,53 @@
 # VoltDesk
 
-A Windows desktop application providing quick access to system power controls, settings, and utilities via a tray icon.
+Windows tray utility for switching power plans and toggling desktop icons with keyboard shortcuts.
 
-## Features
+![VoltDesk settings window showing keyboard shortcuts and power plan configuration](docs/screenshots/hero.png)
 
-- System tray integration
-- Quick access to common settings
-- Configurable hotkeys
-- Power management controls
-- Lightweight and fast
+Switching Windows power plans takes four clicks minimum, and toggling desktop icon visibility is buried even deeper. VoltDesk puts those controls on global hotkeys you define once, then lives quietly in the system tray.
+
+## What it does
+
+- **Power plan shortcuts** — assign a global hotkey to each Windows power plan; press it anywhere to switch instantly
+- **Desktop icon toggle** — show or hide all desktop icons with a single shortcut (default: `Ctrl+Shift+D`)
+- **Tray integration** — right-click the tray icon for quick access; closing the settings window keeps VoltDesk running
+- **Start with Windows** — optional autostart via the registry; no installer required for basic use
+- **Start Menu shortcut** — optional pin under All apps
+- **No admin rights needed** — power plan switching uses the Windows API directly
+
+## Quick start
+
+```bash
+dotnet run
+```
+
+.NET 10 or later. The app appears in the system tray immediately. Right-click the icon for settings.
+
+To build a standalone executable:
+
+```bash
+dotnet publish -c Release -r win-x64
+```
 
 ## Building
 
-### Requirements
-- .NET 10.0 or later
-- Windows 10/11
+Requirements: .NET 10.0 SDK, Windows 10 or 11.
 
-### Build
 ```bash
 dotnet build
 dotnet publish -c Release -r win-x64
 ```
 
-### Run
-```bash
-dotnet run
-```
-
-## Project Structure
-
-- `Form1.cs` — Main UI form
-- `TrayApplicationContext.cs` — Tray icon integration
-- `PowerManager.cs` — Power management functionality
-- `HotkeyManager.cs` — Keyboard hotkey handling
-- `Configuration.cs` — Settings management
-- `VoltDeskInstaller.iss` — Inno Setup installer configuration
+An Inno Setup installer script (`VoltDeskInstaller.iss`) is included for packaging.
 
 ## License
 
-This project is licensed under the **GNU General Public License v3.0 (GPLv3)**. See the LICENSE file for full details.
+[GPL-3.0](LICENSE)
 
-In summary: You are free to use, modify, and distribute this software, provided that any derivative works are also licensed under GPLv3.
+## Feedback
 
-For the full license text, visit: https://www.gnu.org/licenses/gpl-3.0.txt
+Questions, ideas and bug reports are welcome in [Issues](https://github.com/kilrkrow/voltdesk/issues).
 
-## Author
+---
 
-Created by Guy Schamp
+Built by Guy Schamp · [Fox & Dove](https://foxanddoveconsulting.com) · more tools at [github.com/kilrkrow](https://github.com/kilrkrow)
