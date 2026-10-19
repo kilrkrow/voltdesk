@@ -83,9 +83,14 @@ $nupkg = Join-Path $outFull "voltdesk.$pkgVersion.nupkg"
 if (Test-Path -LiteralPath $nupkg) { Remove-Item -LiteralPath $nupkg -Force }
 Push-Location $stage
 try {
-    & choco pack voltdesk.nuspec --out-dir $outFull --limit-output
+    # Pack inside the staging folder and move the result: some choco versions
+    # ignore --out-dir, so do not rely on it.
+    & choco pack voltdesk.nuspec --limit-output
     if ($LASTEXITCODE -ne 0) { throw "choco pack failed with exit code $LASTEXITCODE" }
 } finally { Pop-Location }
+$packed = Join-Path $stage "voltdesk.$pkgVersion.nupkg"
+if (-not (Test-Path -LiteralPath $packed)) { throw "choco pack did not produce $packed" }
+Move-Item -LiteralPath $packed -Destination $nupkg
 if (-not (Test-Path -LiteralPath $nupkg)) { throw "Expected package not found: $nupkg" }
 
 Write-Host "nupkg: $nupkg"
