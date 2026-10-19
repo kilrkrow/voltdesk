@@ -36,3 +36,46 @@ Name: "{userstartup}\VoltDesk"; Filename: "{app}\VoltDesk.exe"; IconFilename: "{
 
 [Run]
 Filename: "{app}\VoltDesk.exe"; Description: "Launch VoltDesk"; Flags: nowait postinstall skipifsilent
+
+[Code]
+// VoltDesk itself can write HKCU\...\Run\VoltDesk ("Start with Windows") and
+// {userprograms}\VoltDesk.lnk ("Start Menu shortcut"). Remove them on
+// uninstall, but only when they point into this install, so a separate copy
+// of VoltDesk (portable zip, dev build) keeps its own entries.
+function PointsIntoApp(const Target: String): Boolean;
+var
+  AppDir: String;
+begin
+  AppDir := Lowercase(AddBackslash(ExpandConstant('{app}')));
+  Result := (Target <> '') and (Pos(AppDir, Lowercase(Target)) > 0);
+end;
+
+function ShortcutTarget(const LinkPath: String): String;
+var
+  Shell, Link: Variant;
+begin
+  Result := '';
+  try
+    Shell := CreateOleObject('WScript.Shell');
+    Link := Shell.CreateShortcut(LinkPath);
+    Result := Link.TargetPath;
+  except
+    Result := '';
+  end;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  RunValue, LinkPath: String;
+begin
+  if CurUninstallStep = usUninstall then
+  begin
+    if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'VoltDesk', RunValue) then
+      if PointsIntoApp(RunValue) then
+        RegDeleteValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'VoltDesk');
+    LinkPath := ExpandConstant('{userprograms}\VoltDesk.lnk');
+    if FileExists(LinkPath) then
+      if PointsIntoApp(ShortcutTarget(LinkPath)) then
+        DeleteFile(LinkPath);
+  end;
+end;
