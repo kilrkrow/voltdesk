@@ -36,6 +36,8 @@ foreach ($key in $uninstallKeys) {
   if ($validExitCodes -notcontains $process.ExitCode) {
     throw "VoltDesk uninstaller failed with exit code $($process.ExitCode)"
   }
+  # Remove only one install: the first match, per-user (HKCU) first.
+  break
 }
 
 if (-not $found) {

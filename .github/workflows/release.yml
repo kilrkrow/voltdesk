@@ -149,6 +149,35 @@ jobs:
           if ($left.Count) { throw "after uninstall, leftovers: $($left -join ', ')" }
           Write-Host "uninstall OK: no leftovers"
 
+      - name: Validate upgrade from the machine-wide 1.1.0 package
+        env:
+          PKG_DIR: ${{ steps.pack.outputs.package_dir }}
+          PKG_VERSION: ${{ steps.pack.outputs.package_version }}
+        run: |
+          # Read-only use of the community feed: installs the old 1.1.0 package
+          # (Program Files, HKLM) and checks that upgrading to this package
+          # replaces it with the per-user install instead of leaving two copies.
+          $appDir = Join-Path $env:LOCALAPPDATA 'Programs\VoltDesk'
+          $oldKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\VoltDesk_is1'
+          $newKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\VoltDesk_is1'
+          choco install voltdesk --version 1.1.0 --source https://community.chocolatey.org/api/v2/ --ignore-dependencies -y --no-progress
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Could not install voltdesk 1.1.0 from the community feed; upgrade test skipped."
+            exit 0
+          }
+          if (Test-Path $oldKey) { Write-Host "1.1.0 installed machine-wide: $oldKey" } else { Write-Warning "1.1.0 did not create $oldKey" }
+
+          choco upgrade voltdesk --source $env:PKG_DIR --version $env:PKG_VERSION --pre --ignore-dependencies -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "choco upgrade failed with exit code $LASTEXITCODE" }
+          if (Test-Path $oldKey) { throw "after upgrade: old machine-wide uninstall entry still present" }
+          if (Test-Path (Join-Path $env:ProgramFiles 'VoltDesk\VoltDesk.exe')) { throw "after upgrade: Program Files\VoltDesk\VoltDesk.exe still present" }
+          if (-not (Test-Path (Join-Path $appDir 'VoltDesk.exe'))) { throw "after upgrade: $appDir\VoltDesk.exe missing" }
+          Write-Host "upgrade OK: machine-wide 1.1.0 removed, per-user install present"
+
+          choco uninstall voltdesk -y --no-progress
+          if ($LASTEXITCODE -ne 0) { throw "choco uninstall failed with exit code $LASTEXITCODE" }
+          if ((Test-Path (Join-Path $appDir 'VoltDesk.exe')) -or (Test-Path $newKey)) { throw "after uninstall: per-user install still present" }
+          Write-Host "uninstall after upgrade OK"
       - name: Upload Chocolatey package as workflow artifact
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
