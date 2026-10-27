@@ -27,3 +27,7 @@ Thumbs.db
 # Application runtime files
 *.log
 *.db
+
+# Release spine outputs (build/release.ps1, Inno Setup, choco pack)
+release/
+Output/

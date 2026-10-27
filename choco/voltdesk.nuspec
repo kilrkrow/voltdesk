@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Chocolatey package template for VoltDesk.
+  build/choco-pack.ps1 stamps <version> and <releaseNotes> from the release tag
+  at pack time; the 0.0.0 below is a placeholder and is never published.
+  tools\VoltDeskSetup.exe, tools\LICENSE.txt and tools\VERIFICATION.txt are
+  added by the build (never committed).
+-->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>voltdesk</id>
+    <version>0.0.0</version>
+    <title>VoltDesk</title>
+    <authors>kilrkrow</authors>
+    <description>Windows desktop application for quick system access and power management</description>
+    <projectUrl>https://github.com/kilrkrow/voltdesk</projectUrl>
+    <packageSourceUrl>https://github.com/kilrkrow/voltdesk</packageSourceUrl>
+    <projectSourceUrl>https://github.com/kilrkrow/voltdesk</projectSourceUrl>
+    <bugTrackerUrl>https://github.com/kilrkrow/voltdesk/issues</bugTrackerUrl>
+    <docsUrl>https://github.com/kilrkrow/voltdesk#readme</docsUrl>
+    <iconUrl>https://cdn.jsdelivr.net/gh/kilrkrow/voltdesk@master/appicon.ico</iconUrl>
+    <licenseUrl>https://github.com/kilrkrow/voltdesk/blob/master/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <tags>system-access power-management windows-desktop</tags>
+    <summary>Quick system access and power management for Windows</summary>
+    <releaseNotes>https://github.com/kilrkrow/voltdesk/releases</releaseNotes>
+    <dependencies>
+      <dependency id="dotnet-10.0-desktopruntime" version="[10.0.0,11.0.0)" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

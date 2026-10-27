@@ -40,6 +40,29 @@ dotnet publish -c Release -r win-x64
 
 An Inno Setup installer script (`VoltDeskInstaller.iss`) is included for packaging.
 
+## Releasing
+
+Releases are cut by pushing a version tag; there is nothing to click in the GitHub UI.
+
+1. Make sure `<Version>` in `PowerDesktopApp.csproj` matches the release (the tag also overrides it at build time).
+2. Tag `master` and push the tag:
+
+   ```bash
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+
+The [Release workflow](.github/workflows/release.yml) then builds Release on `windows-latest`, attaches `VoltDesk-win-x64-v1.2.3.zip` and `VoltDesk-win-x64-v1.2.3.zip.sha256` to a new GitHub release, builds the Inno Setup installer, packs the Chocolatey package and test-installs and uninstalls it, and pushes it to the Chocolatey community feed.
+
+Tags containing `-` (for example `v1.2.3-rc.1`) are test/prerelease tags: the GitHub release is created as a draft prerelease and the Chocolatey push is skipped. The push is also skipped on forks, if the repository is private, or if the `CHOCOLATEY_API_KEY` secret is missing; the log says which.
+
+To produce the same zip and `.sha256` locally (output goes to the git-ignored `release\` folder):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File build\release.ps1              # version from the .csproj
+powershell -ExecutionPolicy Bypass -File build\release.ps1 -Version v1.2.3
+```
+
 ## License
 
 [GPL-3.0](LICENSE)
